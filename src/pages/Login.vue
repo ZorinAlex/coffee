@@ -30,7 +30,7 @@
       </v-container>
     </v-content>
 
-    <v-footer :fixed="fixed" app>
+    <v-footer fixed app>
       <span>&copy; 2017</span>
     </v-footer>
   </v-app>

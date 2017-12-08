@@ -36,16 +36,57 @@
     font-size: 50px
   }
 </style>
+
 <template>
   <v-app light>
     <v-navigation-drawer
       fixed
+      disable-resize-watcher
+      :mobile-break-point="360"
+      :width="200"
       :clipped="clipped"
       v-model="drawer"
       app
     >
+      <v-list subheader>
+        <v-subheader>Categories</v-subheader>
+        <template v-for="(cat, index) in categories">
+          <v-list-tile :key="index" @click="showSubcategories(cat.title)">
+            <v-list-tile-content>
+              {{ cat.title }}
+          </v-list-tile-content>
+          </v-list-tile>
+          <v-divider v-if="index+1 < categories.length"></v-divider>
+        </template>
+      </v-list>
+
+      <v-list subheader>
+        <v-subheader>Subcategories</v-subheader>
+        <template v-for="(subcat, index) in subcategories">
+          <v-list-tile :key="index" @click="showProducts(subcat.title)">
+            <v-list-tile-content>
+              {{ subcat.title }}
+          </v-list-tile-content>
+          </v-list-tile>
+          <v-divider v-if="index+1 < subcat.length"></v-divider>
+        </template>
+      </v-list>
     </v-navigation-drawer>
-    <v-toolbar fixed app :clipped-left="clipped">
+    <v-navigation-drawer
+      fixed
+      disable-resize-watcher
+      right
+      :mobile-break-point="360"
+      :width="300"
+      :clipped="clipped"
+      v-model="drawer"
+      app
+    >
+      <v-list subheader>
+        <v-subheader>Check</v-subheader>
+      </v-list>
+    </v-navigation-drawer>
+    <v-toolbar fixed app clipped-left clipped-right>
       <v-toolbar-side-icon @click.stop="drawer = !drawer" light></v-toolbar-side-icon>
       <v-toolbar-title>Coffee</v-toolbar-title>
       <v-spacer></v-spacer>
@@ -68,33 +109,147 @@
     </v-toolbar>
 
     <v-content>
-      <v-container fluid v-if="state=='categories'">
-            <div class="category" v-for="cat in categories" @click="showSubcategories(cat.title)">
-              <p>{{cat.title}}</p>
-            </div>
+      <v-container fluid grid-list-md>
+        <v-layout row wrap>
+          <v-flex xs2 sm3 v-for="prod in products" :key="prod.name">
+            <v-card hover>
+              <v-card-media height="100px" :src="prod.img"></v-card-media>
+              <v-card-title primary-title>{{prod.name}}</v-card-title>
+              <v-divider></v-divider>
+              <v-card-text>{{prod.price}}</v-card-text>
+            </v-card>
+          </v-flex>
+        </v-layout>
       </v-container>
-      <v-container fluid v-if="state=='subcategories'">
-        <div class="category" @click="state='categories'">
-          <v-icon class="btn-icon">reply</v-icon>
-        </div>
-        <div class="category" v-for="cat in subcategories" @click="showProducts(cat.title)">
-          <p>{{cat.title}}</p>
-        </div>
-      </v-container>
-      <v-container fluid v-if="state=='products'">
-        <div class="category" @click="state='subcategories'">
-          <v-icon class="btn-icon">reply</v-icon>
-        </div>
-        <div class="product" v-for="cat in products" @click="">
-          <div class="product_img"  v-bind:style="{ backgroundImage: 'url(' + cat.img + ')' }">
+      <!--
+      <v-container fluid>
+        <v-layout justify-center>
+          <v-flex style="max-width: 600px">
+            <v-card v-if="state === 'categories'">
+              <v-toolbar class="green" dark>
+                <v-toolbar-title>Categories</v-toolbar-title>
+              </v-toolbar>
 
-          </div>
-          <div class="product_text">
-            <p>{{cat.name}}</p>
-          </div>
-        </div>
+              <v-divider></v-divider>
 
+              <v-card-actions>
+                <v-container fluid grid-list-lg>
+                  <v-layout row wrap>
+                    <v-flex xs12 v-for="cat in categories" :key="cat.title" @click="showSubcategories(cat.title)">
+                      <v-btn style="height: 80px" block color="blue" dark large>{{cat.title}}</v-btn>
+                    </v-flex>
+                  </v-layout>
+                </v-container>
+              </v-card-actions>
+            </v-card>
+
+            <v-card v-if="state === 'subcategories'">
+              <v-toolbar class="green" dark>
+                <v-btn icon @click="state = 'categories'">
+                  <v-icon>subdirectory_arrow_left</v-icon>
+                </v-btn>
+                <v-toolbar-title>Subcategories</v-toolbar-title>
+              </v-toolbar>
+
+              <v-divider></v-divider>
+
+              <v-card-actions>
+                <v-container fluid grid-list-lg>
+                  <v-layout row wrap>
+                    <v-flex xs12 v-for="subcat in subcategories" :key="subcat.title" @click="showProducts(subcat.title)">
+                      <v-btn style="height: 80px" block color="blue" dark large>{{subcat.title}}</v-btn>
+                    </v-flex>
+                  </v-layout>
+                </v-container>
+              </v-card-actions>
+            </v-card>
+          </v-flex>
+        </v-layout>
       </v-container>
+      <!--
+      <v-container fluid grid-list-lg>
+        <v-layout row wrap v-if="state === 'categories'">
+          <v-flex xs12 v-for="cat in categories" :key="cat.title" @click="showSubcategories(cat.title)">
+            <v-card style="height: 100px;" class="primary" hover>
+              <v-container fluid fill-height>
+                <v-card-text class="headline white--text text-xs-center">{{cat.title}}</v-card-text>
+              </v-container>
+            </v-card>
+          </v-flex>
+        </v-layout>
+
+        <v-layout row wrap v-if="state === 'subcategories'">
+          <v-flex xs12 @click="state = 'categories'">
+            <v-card style="height: 100px;" class="primary" hover>
+              <v-container fluid fill-height>
+                <v-card-text class="headline text-xs-center">
+                  <v-avatar>
+                    <v-icon dark>subdirectory_arrow_left</v-icon>
+                  </v-avatar>
+                </v-card-text>
+              </v-container>
+            </v-card>
+          </v-flex>
+
+          <v-flex xs12 v-for="subcat in subcategories" :key="subcat.title" @click="showProducts(subcat.title)">
+            <v-card style="height: 100px;" class="primary" hover>
+              <v-container fluid fill-height>
+                <v-card-text class="headline white--text text-xs-center">{{subcat.title}}</v-card-text>
+              </v-container>
+            </v-card>
+          </v-flex>
+        </v-layout>
+
+        <v-layout row wrap v-if="state === 'products'">
+          <v-flex xs12 @click="state = 'subcategories'">
+            <v-card style="height: 100px;" class="primary" hover>
+              <v-container fluid fill-height>
+                <v-card-text class="headline text-xs-center">
+                  <v-avatar>
+                    <v-icon dark>subdirectory_arrow_left</v-icon>
+                  </v-avatar>
+                </v-card-text>
+              </v-container>
+            </v-card>
+          </v-flex>
+
+          <v-flex xs12 v-for="prod in products" :key="prod.title">
+            <v-card color="grey lighten-2" class="white--text">
+              <v-toolbar flat>
+                <v-toolbar-title>{{prod.name}}</v-toolbar-title>
+              </v-toolbar>
+
+              <v-divider></v-divider>
+
+              <v-container fluid grid-list-lg>
+                <v-layout row>
+                  <v-flex xs4>
+                    <v-card-media
+                      :src="prod.img"
+                      height="125px"
+                      contain
+                    ></v-card-media>
+                  </v-flex>
+                  <v-flex xs8>
+                    <v-list dense>
+                      <v-list-tile v-for="item in prod.consist" :key="prod.name">
+                        <v-list-tile-content>
+                          {{item.name}}
+                        </v-list-tile-content>
+
+                        <v-list-tile-action>
+                          {{item.value}}
+                        </v-list-tile-action>
+                      </v-list-tile>
+                    </v-list>
+                  </v-flex>
+                </v-layout>
+              </v-container>
+            </v-card>
+          </v-flex>
+        </v-layout>
+      </v-container>
+      -->
     </v-content>
 
     <v-footer :fixed="fixed" app>
@@ -110,7 +265,7 @@
   export default {
     data () {
       return {
-        clipped: false,
+        clipped: true,
         drawer: true,
         fixed: false,
         categories: [],

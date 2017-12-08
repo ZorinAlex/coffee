@@ -9,7 +9,11 @@
               :items="products"
             >
               <template slot="items" slot-scope="props">
-                <td class="text-xs-center"><img width="80" height="80" :src="props.item.img" alt=""></td>
+                <td class="text-xs-center">
+                  <v-avatar size="80px" tile>
+                    <img :src="props.item.img" alt="props.item.name">
+                  </v-avatar>
+                </td>
                 <td class="text-xs-center">{{ props.item.name }}</td>
                 <td class="text-xs-center">{{ props.item.description }}</td>
                 <td class="text-xs-center">{{ props.item.price }}</td>
