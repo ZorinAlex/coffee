@@ -3,7 +3,7 @@ import Router from 'vue-router'
 import store from '@/store'
 import * as firebase from 'firebase'
 
-import App from '@/pages/App'
+import App from '@/pages/App2'
 import Login from '@/pages/Login'
 import Admin from '@/pages/Admin'
 
