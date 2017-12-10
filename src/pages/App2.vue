@@ -13,12 +13,37 @@
         <v-list-tile v-for="(item, key) in check" :key="key">
           <v-list-tile-content>
             {{ item.title }}
+
           </v-list-tile-content>
+
+          <v-card-actions>
+            <v-btn fab small @click.stop="removeCountCheck(key)">
+              <v-icon>remove</v-icon>
+            </v-btn>
+
+            <v-spacer></v-spacer>
+
+            <div>{{ item.count }}</div>
+
+            <v-spacer></v-spacer>
+
+            <v-btn fab small @click.stop="addCountCheck(key)">
+              <v-icon>add</v-icon>
+            </v-btn>
+          </v-card-actions>
+
           <v-list-tile-action>
             {{ item.price * item.count }}
+
           </v-list-tile-action>
+        </v-list-tile>
+        <v-list-tile>
+          <v-list-tile-content>
+            Total sum
+          </v-list-tile-content>
+
           <v-list-tile-action>
-            {{ item.count }}
+            {{ checkTotalSum }}
           </v-list-tile-action>
         </v-list-tile>
       </v-list>
@@ -74,7 +99,7 @@
           <v-flex xs12>
             <v-subheader>PRODUCTS</v-subheader>
             <v-layout row wrap>
-              <v-flex xs2 v-for="(prod, index) in products" :key="prod.name">
+              <v-flex xs2 v-for="(prod, index) in products" :key="prod.name" @click="addToCheck(index, prod)">
                 <v-card>
                   <v-card-media height="100px" :src="prod.img"></v-card-media>
                   <v-card-actions>
@@ -86,7 +111,7 @@
                   <v-divider></v-divider>
 
                   <v-card-actions>
-                    <v-btn fab small @click="removeCount(index)">
+                    <v-btn fab small @click.stop="removeCount(index)">
                       <v-icon>remove</v-icon>
                     </v-btn>
 
@@ -96,15 +121,9 @@
 
                     <v-spacer></v-spacer>
 
-                    <v-btn fab small @click="addCount(index)">
+                    <v-btn fab small @click.stop="addCount(index)">
                       <v-icon>add</v-icon>
                     </v-btn>
-                  </v-card-actions>
-
-                  <v-divider></v-divider>
-
-                  <v-card-actions>
-                    <v-btn block @click="addToCheck(index, prod)">Add to check</v-btn>
                   </v-card-actions>
                 </v-card>
               </v-flex>
@@ -124,9 +143,10 @@
 <script>
   import * as firebase from 'firebase'
   import 'firebase/firestore'
+  import VListTileAction from "vuetify/src/components/VList/VListTileAction";
 
   export default {
-    data () {
+    components: {VListTileAction}, data () {
       return {
         clipped: true,
         drawer: true,
@@ -142,19 +162,52 @@
       addCount (index) {
         this.products[index].count++
       },
+      addCountCheck (key) {
+        let prod = this.check[key];
+        prod.count++;
+        this.check = Object.assign({}, this.check, {[key]: {title: prod.title, price: prod.price, count: prod.count}});
+      },
+      removeCountCheck (key) {
+        let prod = this.check[key];
+        if (prod.count > 1) {
+          prod.count--;
+          this.check = Object.assign({}, this.check, {
+            [key]: {
+              title: prod.title,
+              price: prod.price,
+              count: prod.count
+            }
+          });
+        } else if (prod.count === 1) {
+          let check = this.check;
+          delete check[key];
+          this.check = Object.assign({}, check);
+        }
+      },
       removeCount (index) {
-        if(this.products[index].count > 1) this.products[index].count--
+        if (this.products[index].count > 1) this.products[index].count--
       },
       addToCheck (index, prod) {
-        if(this.check.hasOwnProperty(prod.id)) {
-          this.check = Object.assign({}, this.check, {[prod.id]: {title: prod.name, price: prod.price, count: prod.count + prod.count}});
+        if (this.check.hasOwnProperty(prod.id)) {
+          let count = this.check[prod.id].count;
+          this.check = Object.assign({}, this.check, {
+            [prod.id]: {
+              title: prod.name,
+              price: prod.price,
+              count: prod.count + count
+            }
+          });
           this.products[index].count = 1;
-          console.log(this.check)
         }
         else {
-          this.check = Object.assign({}, this.check, {[prod.id]: {title: prod.name, price: prod.price, count: prod.count}});
+          this.check = Object.assign({}, this.check, {
+            [prod.id]: {
+              title: prod.name,
+              price: prod.price,
+              count: prod.count
+            }
+          });
           this.products[index].count = 1;
-          console.log(this.check)
         }
       },
       signOut () {
@@ -184,7 +237,7 @@
       },
       showProducts(subcategory){
         this.loadProducts(subcategory).then(() => {
-            this.state='products'
+          this.state = 'products'
         })
       },
       loadSubCategories(category) {
@@ -228,20 +281,27 @@
         });
       },
     },
-      computed: {
-        isAdmin () {
-          return this.$store.getters.isAdmin
-        },
-        isAuth () {
-          return this.$store.getters.isAuth
-        },
-        user () {
-          return this.$store.getters.user
-        }
+    computed: {
+      isAdmin () {
+        return this.$store.getters.isAdmin
       },
-      created () {
-        this.loadCategories();
+      isAuth () {
+        return this.$store.getters.isAuth
+      },
+      user () {
+        return this.$store.getters.user
+      },
+      checkTotalSum () {
+        let total = 0;
+        for(let i in this.check) {
+          total += this.check[i].price * this.check[i].count
+        }
+        return total
       }
+    },
+    created () {
+      this.loadCategories();
     }
+  }
 
 </script>
