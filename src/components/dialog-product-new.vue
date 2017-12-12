@@ -3,6 +3,12 @@
     width: 150px;
     height: 150px;
   }
+  .prev_btn{
+    position: absolute;
+    top: 45%;
+    left: 45%;
+    transform: translate(-50%, -50%);
+  }
 </style>
 <template>
   <div>
@@ -18,6 +24,7 @@
         scrollable
       >
         <v-card>
+          <form>
           <v-toolbar style="flex: 0 0 auto;" dark class="primary">
             <v-btn icon @click.native="dialog = false" dark>
               <v-icon>close</v-icon>
@@ -31,12 +38,16 @@
           </v-toolbar>
 
           <v-card-text>
+
             <v-container fluid grid-list-lg>
               <v-layout row wrap>
                 <v-flex xs12>
                   <v-text-field
                     v-model="name"
                     label="Название"
+                    :error-messages="nameErrors"
+                    @input="$v.name.$touch()"
+                    @blur="$v.name.$touch()"
                   ></v-text-field>
                 </v-flex>
 
@@ -53,6 +64,9 @@
                   <v-text-field
                     v-model="price"
                     label="Цена"
+                    :error-messages="priceErrors"
+                    @input="$v.price.$touch()"
+                    @blur="$v.price.$touch()"
                   ></v-text-field>
                 </v-flex>
 
@@ -63,21 +77,27 @@
                     item-text="title"
                     v-model="category"
                     label="Категория"
+                    :error-messages="categoryErrors"
+                    @change="$v.category.$touch()"
                   ></v-select>
                 </v-flex>
 
                 <v-flex xs6>
                   <v-select
-                    v-if="subcategories"
+                    v-if="!subcategories.length<1"
                     v-bind:items="subcategories"
                     item-value="title"
                     item-text="title"
                     v-model="subcategory"
                     label="Подкатегория"
+                    :error="isInvalidSubcategory"
+                    @change="changeSubcategory"
                   ></v-select>
                 </v-flex>
               </v-layout>
-
+              <h2>
+                Состав:
+              </h2>
               <v-layout row wrap v-for="(item, index) in consists" :key="item.name">
                 <v-flex xs3>
                   <v-text-field
@@ -117,28 +137,33 @@
                   ></v-text-field>
                 </v-flex>
 
-                <v-flex>
+                <v-flex xs1>
                   <v-btn dark icon color="blue" @click="addConsist">
                     <v-icon>add</v-icon>
                   </v-btn>
                 </v-flex>
+                <v-spacer></v-spacer>
+                <v-flex-xs6>
+                  <v-layout justify-center>
+                    <div style="position: relative;">
+                      <canvas width="150" height="150" id="canvas"/>
+                      <v-btn class="prev_btn" fab large @click="selectFile"><v-icon>add_a_photo</v-icon></v-btn>
+                    </div>
+                    <input @change="onFileChange" type='file' ref="file" style="display: none">
+                    <v-alert outline color="error" icon="warning" :value="isInvalidFile">
+                     Прикрепите изображение.
+                    </v-alert>
+                  </v-layout>
+
+                </v-flex-xs6>
               </v-layout>
             </v-container>
           </v-card-text>
 
-          <v-card-actions>
-            <v-flex>
-              <canvas width="150" height="150" id="canvas"/>
-            </v-flex>
-            <v-flex>
-              <v-text-field v-if="img" label="Имя файла" :value="img.name"></v-text-field>
-            </v-flex>
-            <input @change="onFileChange" type='file' ref="file" style="display: none">
-            <v-btn @click="selectFile">Add image</v-btn>
-          </v-card-actions>
+
 
           <!--<div style="flex: 1 1 auto;"></div>-->
-
+          </form>
         </v-card>
       </v-dialog>
     </v-layout>
@@ -149,8 +174,16 @@
   import 'firebase/firestore'
   import uploader from './product-image-upload'
   import $ from "jquery";
+  import { validationMixin } from 'vuelidate'
+  import { required, numeric } from 'vuelidate/lib/validators'
 
   export default {
+    mixins: [validationMixin],
+    validations: {
+      name: { required },
+      price: { numeric, required},
+      category : { required }
+    },
     components: {
       uploader
     },
@@ -160,16 +193,17 @@
         dialog: false,
         img: null,
         name: null,
-        price: 0,
+        price: null,
         description: null,
         consistsItemName: null,
         consistsItemValue: null,
         consists: [],
         category: null,
         subcategory: null,
-
+        isInvalidFile: false,
+        isInvalidSubcategory: false,
         categories: [],
-        subcategories: null
+        subcategories: []
       }
     },
     created () {
@@ -182,48 +216,66 @@
     },
     methods: {
       saveProduct(){
-        let productID;
-        firebase.firestore().collection('products').add({
-          img: document.getElementById('canvas').toDataURL(),
-          name: this.name,
-          price: this.price,
-          description: this.description,
-          category: this.category,
-          subcategory: this.subcategory,
-          consist: this.consists
-        })
-//          .then(product => {
-//            productID = product.id;
-//            return firebase.storage().ref('products').child(productID).put(this.img)
-//          })
-//          .then((file) => {
-//            return firebase.firestore().collection('products').doc(productID).update({
-//              img: file.downloadURL
-//            })
-//          })
-          .then(() => {
-            this.dialog = false
-            this.img = null
-            this.name = null
-            this.price = 0
-            this.description = null
-            this.consistsItemName = null
-            this.consistsItemValue = null
-            this.consists = []
-            this.category = null
-            this.subcategory = null
-            this.subcategories = null
-          })
+          if(!this.img){
+              this.isInvalidFile = true;
+          }else{
+              this.isInvalidFile = false;
+          }
+
+          if(!this.subcategories.length<1){
+              if(this.subcategory!=null){
+                this.isInvalidSubcategory = false;
+              }else{
+                this.isInvalidSubcategory = true;
+              }
+          }else{
+             this.isInvalidSubcategory = false;
+          }
+        this.$v.$touch();
+        console.log(this.isInvalidSubcategory)
+        if(!this.isInvalidFile && !this.$v.$invalid && !this.isInvalidSubcategory){
+            let productID;
+            firebase.firestore().collection('products').add({
+              img: document.getElementById('canvas').toDataURL(),
+              name: this.name,
+              price: this.price,
+              description: this.description,
+              category: this.category,
+              subcategory: this.subcategory,
+              consist: this.consists
+            })
+              .then(() => {
+                this.dialog = false;
+                this.img = null;
+                this.name = null;
+                this.price = null;
+                this.description = null;
+                this.consistsItemName = null;
+                this.consistsItemValue = null;
+                this.consists = [];
+                this.category = null;
+                this.subcategory = null;
+                this.subcategories = null;
+                this.isInvalidFile = false;
+                this.isInvalidSubcategory = false;
+                this.$v.$reset();
+                document.getElementById('canvas').getContext('2d').clearRect(0, 0, 150, 150);
+              })
+        }
+
       },
       addConsist(){
-        this.consists.push(
-          {
-            'name': this.consistsItemName,
-            'value': this.consistsItemValue
+          if(this.consistsItemName !=null && this.consistsItemValue!=null){
+            this.consists.push(
+              {
+                'name': this.consistsItemName,
+                'value': this.consistsItemValue
+              }
+            );
+            this.consistsItemName = null;
+            this.consistsItemValue = null;
           }
-        );
-        this.consistsItemName = null;
-        this.consistsItemValue = null;
+
       },
       delConsist(index){
         this.consists.splice(index, 1)
@@ -256,6 +308,11 @@
               });
 
               this.subcategories = arr
+              if(arr.length>1){
+                  this.isInvalidSubcategory = true
+              }else{
+                this.isInvalidSubcategory = false
+              }
             })
           })
       },
@@ -272,7 +329,6 @@
 
           reader.onload = function(e){
             let img = new Image;
-            console.log(img)
             img.src = e.target.result;
             img.onload = function() {
               originalImgWidth = this.width;
@@ -289,15 +345,40 @@
                 offsetW = 0;
               }
               ctx.drawImage(img, offsetW,offsetH,ImgWidth,ImgHeight);
+
             };
           };
           reader.readAsDataURL(files[0]);
-          this.img = files[0]
+          this.img = files[0];
+          this.isInvalidFile = false;
         } else {
           this.img = null
         }
+      },
+      changeSubcategory(){
+          this.isInvalidSubcategory = false;
+      }
+    },
+    computed: {
+      nameErrors () {
+        const errors = []
+        if (!this.$v.name.$dirty) return errors
+        !this.$v.name.required && errors.push('Введите название товара')
+        return errors
+      },
+      priceErrors () {
+        const errors = []
+        if (!this.$v.price.$dirty) return errors
+        !this.$v.price.numeric && errors.push('Цена должна быть числом')
+        !this.$v.price.required && errors.push('Введите цену товара')
+        return errors
+      },
+      categoryErrors () {
+        const errors = []
+        if (!this.$v.category.$dirty) return errors
+        !this.$v.category.required && errors.push('Выберите категорию')
+        return errors
       }
     }
-
   }
 </script>
