@@ -102,6 +102,7 @@
               <v-flex xs2 v-for="(prod, index) in products" :key="prod.name" @click="addToCheck(index, prod)">
                 <v-card>
                   <v-card-media height="100px" :src="prod.img"></v-card-media>
+
                   <v-card-actions>
                     <div>{{prod.name}}</div>
                     <v-spacer></v-spacer>

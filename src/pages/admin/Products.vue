@@ -19,9 +19,13 @@
                 <td class="text-xs-center">{{ props.item.price }}</td>
                 <td class="text-xs-center">{{ props.item.category }}</td>
                 <td class="text-xs-center">{{ props.item.subcategory }}</td>
+                <td>
+                  <product-edit :product="props.item"></product-edit>
+                  <product-delete :productID = 'props.item.id'></product-delete>
+                </td>
               </template>
             </v-data-table>
-            <product-dialog :dialog="true"></product-dialog>
+            <product-new></product-new>
           </v-card>
       </v-layout>
 
@@ -30,10 +34,16 @@
 <script>
   import * as firebase from 'firebase'
   import 'firebase/firestore'
-  import productDialog from '@/components/dialog-product-new'
+
+  import productNew from '@/components/dialog-product-new'
+  import productEdit from '@/components/dialog-product-edit'
+  import productDelete from '@/components/dialog-product-delete'
+
   export default {
     components: {
-      productDialog
+      productNew,
+      productEdit,
+      productDelete
     },
     data: () => ({
       newProductDialog: false,
