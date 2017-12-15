@@ -10,13 +10,13 @@
 
     <v-card>
       <v-card-text>
-        <div class="headline">Are you sure that you want to delete this product?</div>
+        <div class="headline">Удалить товар?</div>
       </v-card-text>
       <v-divider></v-divider>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn dark color="blue" :loading="processing" @click="deleteProduct">Accept</v-btn>
-        <v-btn dark color="red" :loading="processing" @click.stop="dialog = false">Cancel</v-btn>
+        <v-btn dark color="blue" :loading="processing" @click="deleteProduct">Да</v-btn>
+        <v-btn dark color="red" :loading="processing" @click.stop="dialog = false">Нет</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

@@ -20,12 +20,13 @@
                 <td class="text-xs-center">{{ props.item.category }}</td>
                 <td class="text-xs-center">{{ props.item.subcategory }}</td>
                 <td>
-                  <product-edit :product="props.item"></product-edit>
+                  <v-btn icon @click="editProduct(props.item)"><v-icon>edit</v-icon></v-btn>
                   <product-delete :productID = 'props.item.id'></product-delete>
                 </td>
               </template>
             </v-data-table>
             <product-new></product-new>
+            <product-edit v-if="productEditDialog" @close="()=>{productEditDialog=false}" :product="productEditData"></product-edit>
           </v-card>
       </v-layout>
 
@@ -46,6 +47,8 @@
       productDelete
     },
     data: () => ({
+      productEditDialog: false,
+      productEditData: {},
       newProductDialog: false,
       products:[],
       headers: [
@@ -73,11 +76,13 @@
               });
 
               this.products = arr
-              console.log(this.products)
             })
           })
+      },
+      editProduct(item){
+        this.productEditDialog = true;
+        this.productEditData = item;
       }
-
     }
   }
 </script>

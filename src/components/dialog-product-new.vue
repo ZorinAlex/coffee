@@ -32,7 +32,7 @@
             <v-toolbar-title>Новый товар</v-toolbar-title>
             <v-spacer></v-spacer>
             <v-toolbar-items>
-              <v-btn dark flat @click="saveProduct">Сохранить</v-btn>
+              <v-btn dark flat @click="saveProduct" :loading="process">Сохранить</v-btn>
 
             </v-toolbar-items>
           </v-toolbar>
@@ -48,6 +48,7 @@
                     :error-messages="nameErrors"
                     @input="$v.name.$touch()"
                     @blur="$v.name.$touch()"
+                    :disabled="process"
                   ></v-text-field>
                 </v-flex>
 
@@ -57,6 +58,7 @@
                     label="Описание"
                     multiLine
                     rows="1"
+                    :disabled="process"
                   ></v-text-field>
                 </v-flex>
 
@@ -67,6 +69,7 @@
                     :error-messages="priceErrors"
                     @input="$v.price.$touch()"
                     @blur="$v.price.$touch()"
+                    :disabled="process"
                   ></v-text-field>
                 </v-flex>
 
@@ -79,6 +82,7 @@
                     label="Категория"
                     :error-messages="categoryErrors"
                     @change="$v.category.$touch()"
+                    :disabled="process"
                   ></v-select>
                 </v-flex>
 
@@ -92,6 +96,7 @@
                     label="Подкатегория"
                     :error="isInvalidSubcategory"
                     @change="changeSubcategory"
+                    :disabled="process"
                   ></v-select>
                 </v-flex>
               </v-layout>
@@ -116,7 +121,7 @@
                 </v-flex>
 
                 <v-flex>
-                  <v-btn dark icon color="red" @click="delConsist(index)">
+                  <v-btn dark icon color="red" @click="delConsist(index)" :disabled="process">
                     <v-icon>delete</v-icon>
                   </v-btn>
                 </v-flex>
@@ -127,6 +132,7 @@
                   <v-text-field
                     label="Название"
                     v-model="consistsItemName"
+                    :disabled="process"
                   ></v-text-field>
                 </v-flex>
 
@@ -134,11 +140,12 @@
                   <v-text-field
                     label="Количество"
                     v-model="consistsItemValue"
+                    :disabled="process"
                   ></v-text-field>
                 </v-flex>
 
                 <v-flex xs1>
-                  <v-btn dark icon color="blue" @click="addConsist">
+                  <v-btn dark icon color="blue" @click="addConsist" :disabled="process">
                     <v-icon>add</v-icon>
                   </v-btn>
                 </v-flex>
@@ -147,7 +154,7 @@
                   <v-layout justify-center>
                     <div style="position: relative;">
                       <canvas width="150" height="150" id="canvas"/>
-                      <v-btn class="prev_btn" fab large @click="selectFile"><v-icon>add_a_photo</v-icon></v-btn>
+                      <v-btn class="prev_btn" fab large @click="selectFile" :disabled="process"><v-icon>add_a_photo</v-icon></v-btn>
                     </div>
                     <input @change="onFileChange" type='file' ref="file" style="display: none">
                     <v-alert outline color="error" icon="warning" :value="isInvalidFile">
@@ -159,8 +166,6 @@
               </v-layout>
             </v-container>
           </v-card-text>
-
-
 
           <!--<div style="flex: 1 1 auto;"></div>-->
         </form>
@@ -204,11 +209,14 @@
         isInvalidFile: false,
         isInvalidSubcategory: false,
         categories: [],
-        subcategories: []
+        subcategories: [],
+        storage: [],
+        process: false
       }
     },
     created () {
-      this.loadCategories()
+      this.loadCategories();
+      this.loadFromStorage();
     },
     watch: {
       category: function (val) {
@@ -222,7 +230,6 @@
           }else{
               this.isInvalidFile = false;
           }
-
           if(!this.subcategories.length<1){
               if(this.subcategory!=null){
                 this.isInvalidSubcategory = false;
@@ -233,9 +240,20 @@
              this.isInvalidSubcategory = false;
           }
         this.$v.$touch();
-        console.log(this.isInvalidSubcategory)
         if(!this.isInvalidFile && !this.$v.$invalid && !this.isInvalidSubcategory){
             let productID;
+            this.process=true;
+            let newConsists = [];
+            this.storage.forEach((item)=>{
+                this.consists.forEach((con)=>{
+                    if(item.name!=con.name){
+                        if(newConsists['name']!=con.name){
+                          newConsists.push({name:con.name,value: con.value})
+                        }
+                    }
+                })
+            });
+            this.addToStorage(newConsists);
             firebase.firestore().collection('products').add({
               img: document.getElementById('canvas').toDataURL(),
               name: this.name,
@@ -261,6 +279,7 @@
                 this.isInvalidSubcategory = false;
                 this.$v.$reset();
                 document.getElementById('canvas').getContext('2d').clearRect(0, 0, 150, 150);
+                this.process = false;
               })
         }
 
@@ -285,13 +304,11 @@
         firebase.firestore().collection('categories')
           .onSnapshot(categories => {
             let arr = [];
-
             categories.forEach(category => {
               arr.push({
                 ...category.data(),
                 id: category.id
               });
-
               this.categories = arr
             })
           })
@@ -358,6 +375,26 @@
       },
       changeSubcategory(){
           this.isInvalidSubcategory = false;
+      },
+      addToStorage(items){
+          items.forEach((item)=>{
+            firebase.firestore().collection('storage').add({
+              ...item
+            })
+          })
+      },
+      loadFromStorage(){
+        firebase.firestore().collection('storage')
+          .onSnapshot(items => {
+            let arr = [];
+            items.forEach(item => {
+              arr.push({
+                ...item.data(),
+                id: item.id
+              });
+              this.storage = arr
+            })
+          })
       }
     },
     computed: {
